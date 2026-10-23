@@ -6,7 +6,9 @@
   本網頁之程式碼、版面與教案設計著作權屬詹宗龍所有，僅供非營利之教育教學使用。
   未經著作權人書面授權，不得重製、改作、散布或修改本網頁之全部或一部分。
   臺羅拼寫依教育部《臺灣台語羅馬字拼音方案》；韓語音檔以 Microsoft Edge 語音合成（ko-KR-SunHiNeural）產生，
-  公布後點「台語羅馬字」播放的台語音由陽明交大台語 TTS 產生。
+  公布後點「台語羅馬字」播放的台語音：有同音讀單字詞條者，取自教育部《臺灣台語常用詞辭典》音檔，
+  其著作權屬教育部，依創用CC「姓名標示－禁止改作」3.0 臺灣授權條款以原檔使用（未剪輯、未改作）；
+  其餘由陽明交大台語 TTS 產生。
   聲調依各音檔實際音高（Praat 基頻分析）判定，並經教師審聽修正；只公布近似度 100% 及教師審聽修正過的組合，其餘顯示「無近似音」。
 -->
 <html lang="zh-Hant">
@@ -172,7 +174,7 @@ footer{flex:none;font-size:clamp(.6rem,1.4vmin,.75rem);color:#777;text-align:cen
     </div>
   </section>
 </main>
-<footer>簡報筆 ▶ 聲母→韻母→聲調→答案→台語音→下一題／◀ 倒退｜公布後點台語羅馬字聽台語｜空白 播放｜S 慢速｜Enter 依序公布｜A 全部公布｜R 隨機｜T 倒數｜Esc 清空　　© 2026 詹宗龍（臺中明道中學）｜臺羅依教育部拼音方案｜韓語語音：Microsoft Edge TTS</footer>
+<footer>© 2026 詹宗龍（臺中明道中學）｜台語音：教育部《臺灣台語常用詞辭典》（CC BY-ND 3.0 TW）、陽明交大台語 TTS｜韓語語音：Microsoft Edge TTS｜臺羅依教育部拼音方案　　簡報筆 ▶ 聲母→韻母→聲調→答案→台語音→下一題／◀ 倒退｜空白 播放｜S 慢速｜Enter 依序公布｜A 全部公布｜R 隨機｜T 倒數｜Esc 清空</footer>
 
 <script src="data.js"></script>
 <script src="common.js"></script>
@@ -221,6 +223,7 @@ function play(slow){
   if(AUDIO[cur.code]){
     player.pause();
     player.src = 'audio/' + cur.code + '.mp3';
+    player.volume = 1;
     player.playbackRate = slow ? 0.65 : 1;
     if('preservesPitch' in player) player.preservesPitch = true;
     player.onended = done; player.onerror = done;
@@ -246,6 +249,10 @@ function playTaigi(){
   player.pause();
   player.src = 'audio_tw/' + key + '.mp3';
   player.playbackRate = 1;
+  /* 教育部辭典原檔音量較大：只在播放時調低，不改動檔案（禁止改作） */
+  var moe = (D.twSrc || {})[key];
+  player.volume = moe ? 0.7 : 1;
+  msg(moe ? '台語音：教育部《臺灣台語常用詞辭典》「' + moe.hanji + '」（CC BY-ND 3.0 TW）' : '台語音：陽明交大台語 TTS');
   all.classList.add('saying');
   var done = function(){ all.classList.remove('saying'); };
   player.onended = done; player.onerror = done;
