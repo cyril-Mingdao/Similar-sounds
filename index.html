@@ -1,0 +1,462 @@
+<!doctype html>
+<!--
+  【著作權聲明】
+  韓文拼讀投影 — 教師在大螢幕即時組合韓文子音、母音、收音並播音，學生拼出對應的臺灣台語羅馬字
+  Copyright © 2026 詹宗龍（臺中明道中學）. All rights reserved.
+  本網頁之程式碼、版面與教案設計著作權屬詹宗龍所有，僅供非營利之教育教學使用。
+  未經著作權人書面授權，不得重製、改作、散布或修改本網頁之全部或一部分。
+  臺羅拼寫依教育部《臺灣台語羅馬字拼音方案》；韓語音檔以 Microsoft Edge 語音合成（ko-KR-SunHiNeural）產生，
+  公布後點「台語羅馬字」播放的台語音由陽明交大台語 TTS 產生。
+  聲調依各音檔實際音高（Praat 基頻分析）判定，並經教師審聽修正；只公布近似度 100% 及教師審聽修正過的組合，其餘顯示「無近似音」。
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="詹宗龍（臺中明道中學）">
+<meta name="copyright" content="© 2026 詹宗龍（臺中明道中學）。保留一切權利。">
+<title>聽韓語．拼台羅</title>
+<style>
+:root{
+  --black:#111111; --yellow:#FFD400; --white:#FFFFFF; --gray-d:#2A2A2A; --gray-l:#F5F5F5;
+  --mute:#8A8A8A; --gap:clamp(8px,1.4vmin,16px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--black);color:var(--white);display:flex;flex-direction:column;overflow:hidden;
+  font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif}
+.ko{font-family:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+.tl{font-family:"Charis SIL","Gentium Plus","Segoe UI",Arial,sans-serif}
+button{font:inherit;cursor:pointer;color:inherit}
+
+header{flex:none;display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap;padding:clamp(6px,1.2vmin,12px) var(--gap);border-bottom:3px solid var(--yellow)}
+header h1{margin:0;font-size:clamp(1rem,2.4vmin,1.6rem);color:var(--yellow);white-space:nowrap}
+.tools{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.tog{background:var(--gray-d);border:2px solid var(--gray-d);border-radius:999px;padding:clamp(3px,.8vmin,7px) clamp(10px,1.6vmin,16px);font-size:clamp(.8rem,1.8vmin,1rem);white-space:nowrap}
+.tog[aria-pressed="true"]{background:var(--yellow);color:var(--black);border-color:var(--yellow);font-weight:700}
+
+/* 兩欄：左鍵盤、右舞臺；整頁固定在視窗內，不出現捲軸 */
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:var(--gap);padding:var(--gap)}
+
+/* ---- 左：組合鍵盤（按鈕依可用高度自動縮放） ---- */
+.composer{min-height:0;background:var(--white);color:var(--black);border-radius:16px;padding:var(--gap);
+  display:grid;grid-template-rows:auto minmax(0,2fr) auto minmax(0,2fr) auto minmax(0,1fr);gap:clamp(4px,.8vmin,8px)}
+.composer h2{margin:0;font-size:clamp(.8rem,2vmin,1.1rem);display:flex;align-items:center;gap:8px;line-height:1.2}
+.composer h2 .n{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--black);color:var(--yellow);font-size:.9em;flex:none}
+.grid{display:grid;gap:clamp(3px,.7vmin,8px);min-height:0}
+#gC{grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+#gV{grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+#gT{grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+.jm{container-type:size;min-width:0;min-height:0;border:2px solid var(--black);background:var(--white);border-radius:clamp(6px,1.2vmin,12px);padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;overflow:hidden}
+.jm .ko{font-size:min(62cqh,70cqw)}
+.jm .t{display:none;font-size:min(24cqh,30cqw);color:#666}
+body.showmap .jm .ko{font-size:min(46cqh,60cqw)}
+body.showmap .jm .t{display:block}
+.jm .t.none{color:#bbb}
+.jm.zero .ko{font-size:min(36cqh,34cqw)}
+.jm.sel{background:var(--yellow);box-shadow:inset 0 -4px 0 var(--black)}
+body.hidekorean .jm.sel{background:var(--white);box-shadow:none}
+@media (hover:hover){ .jm:hover{background:#FFF4B0} }
+
+/* ---- 右：舞臺 ---- */
+.stage{min-height:0;display:grid;grid-template-rows:minmax(0,1.25fr) minmax(0,1fr) minmax(0,.5fr) auto;gap:var(--gap)}
+.show{container-type:size;min-height:0;background:var(--gray-d);border-radius:16px;position:relative;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0 clamp(10px,2.4vw,40px) 0 clamp(6px,1.2vw,20px)}
+.syl{text-align:center;min-width:0}
+.syl .big{font-size:min(56cqh,34cqw);line-height:1}
+.syl .formula{font-size:min(11cqh,6cqw);color:var(--yellow);margin-top:3cqh;letter-spacing:.05em;white-space:nowrap}
+.syl .empty{font-size:min(9cqh,5cqw);color:var(--mute)}
+body.hidekorean .syl .big,body.hidekorean .syl .formula{visibility:hidden}
+.ctrl{display:flex;flex-direction:column;align-items:center;gap:4cqh}
+.play{width:min(48cqh,26cqw);height:min(48cqh,26cqw);border-radius:50%;border:0;background:var(--yellow);font-size:min(22cqh,12cqw);box-shadow:0 .6cqh 0 #8a7300;color:var(--black)}
+.play:active{transform:translateY(.5cqh);box-shadow:none}
+.play.playing{animation:pulse .5s ease-in-out infinite alternate}
+@keyframes pulse{to{transform:scale(1.07)}}
+.minis{display:flex;gap:2cqw}
+.small{border:2px solid var(--yellow);background:transparent;color:var(--yellow);border-radius:999px;padding:1.5cqh 2.4cqw;font-size:min(8cqh,4cqw);white-space:nowrap;font-weight:700}
+.small.on{background:var(--yellow);color:var(--black)}
+.small.end{border-color:#FF6B6B;background:#FF6B6B;color:var(--black)}
+.msg{position:absolute;left:0;right:0;bottom:2cqh;text-align:center;color:var(--mute);font-size:min(6.5cqh,3.4cqw)}
+
+/* 答案卡 */
+.cards{min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.card{container-type:size;min-height:0;background:var(--white);color:var(--black);border-radius:14px;text-align:center;position:relative;overflow:hidden;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;justify-items:center;align-items:center;padding:clamp(4px,1vh,12px) clamp(4px,.8vw,12px)}
+.card .lab{font-size:min(12cqh,11cqw);font-weight:700;color:#555;line-height:1.2}
+.card .val{font-size:min(46cqh,32cqw);font-weight:700;line-height:1.05;white-space:nowrap}
+.card .sub{font-size:min(9.5cqh,8cqw);color:#444;line-height:1.25;min-height:1.25em}
+.card.hid{background:var(--yellow);cursor:pointer}
+.full.hid{cursor:pointer}
+.full.playable{cursor:pointer}
+.full .say{display:none;font-size:min(40cqh,6cqw);line-height:1}
+.full.playable .say{display:inline}
+.full.saying .val{color:#8a6d00}
+@media (hover:hover){ .card.hid:hover,.full.hid:hover{filter:brightness(.93)} }
+.card.none .val{font-size:min(20cqh,19cqw);color:var(--mute)}
+.flip{animation:flip .35s ease-out}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+.full{container-type:size;min-height:0;background:var(--white);color:var(--black);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,32px);padding:0 clamp(8px,1.6vw,28px);overflow:hidden}
+.full .lab{font-weight:700;color:#555;font-size:min(24cqh,4.2cqw);white-space:nowrap}
+.full .val{font-size:min(74cqh,12cqw);font-weight:700;letter-spacing:.02em;line-height:1;white-space:nowrap}
+.full.hid .val{color:#ccc}
+.full.none .val{color:var(--mute);font-size:min(40cqh,7cqw)}
+.full .note{font-size:min(20cqh,3.4cqw);color:#444;max-width:40cqw;line-height:1.3}
+
+.actions{container-type:inline-size;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.btn{min-width:0;border:2px solid var(--yellow);border-radius:12px;padding:clamp(6px,1.5vmin,14px) 4px;font-size:min(clamp(.8rem,2.2vmin,1.25rem),2.9cqw);font-weight:700;background:transparent;color:var(--yellow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn.pri{background:var(--yellow);color:var(--black)}
+.btn:disabled{opacity:.35;cursor:default}
+
+footer{flex:none;font-size:clamp(.6rem,1.4vmin,.75rem);color:#777;text-align:center;padding:0 var(--gap) 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 直式或窄螢幕：上舞臺、下鍵盤，依然一頁塞滿不捲動 */
+@media (max-aspect-ratio:1/1){
+  main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1.15fr) minmax(0,1fr)}
+  .stage{order:-1;grid-template-rows:minmax(0,1.1fr) minmax(0,1fr) minmax(0,.55fr) auto}
+  #gC{grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
+  .composer{grid-template-rows:auto minmax(0,3fr) auto minmax(0,2fr) auto minmax(0,1fr)}
+  .card .sub{display:none}
+  .full .note{display:none}
+  .btn{white-space:normal;line-height:1.15;font-size:min(.9rem,3.6cqw)}
+  header h1{font-size:clamp(.9rem,4vw,1.2rem)}
+  .tools{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎧聽韓語．拼台羅</h1>
+  <div class="tools">
+    <button class="tog" id="tgMap" aria-pressed="false" title="在韓文字母下顯示臺羅（教師備課用）">對照提示</button>
+    <button class="tog" id="tgHide" aria-pressed="false" title="只播音，不讓學生看到韓文">隱藏韓文</button>
+    <button class="tog" id="tgFull" aria-pressed="false">⛶ 全螢幕</button>
+  </div>
+</header>
+
+<main>
+  <section class="composer" aria-label="韓文組合">
+    <h2><span class="n">1</span>子音（初聲）</h2>
+    <div class="grid" id="gC"></div>
+    <h2><span class="n">2</span>母音（中聲）</h2>
+    <div class="grid" id="gV"></div>
+    <h2><span class="n">3</span>收音（받침）</h2>
+    <div class="grid" id="gT"></div>
+  </section>
+
+  <section class="stage" aria-label="投影舞臺">
+    <div class="show">
+      <div class="syl" id="syl"><div class="empty">請老師點選子音和母音</div></div>
+      <div class="ctrl">
+        <button class="play" id="btnPlay" aria-label="播放" title="播放（空白鍵）">🔊</button>
+        <div class="minis">
+          <button class="small" id="btnSlow" title="慢速（S）">🐢 慢速</button>
+          <button class="small" id="btnTimer" title="倒數（T）">⏱ <span id="tLabel">15 秒</span></button>
+        </div>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="cards">
+      <div class="card hid" id="cIni" title="點一下公布"><span class="lab">聲母</span><span class="val tl">？</span><span class="sub"></span></div>
+      <div class="card hid" id="cFin" title="點一下公布"><span class="lab">韻母</span><span class="val tl">？</span><span class="sub"></span></div>
+      <div class="card hid" id="cTone" title="點一下公布"><span class="lab">聲調</span><span class="val">？</span><span class="sub"></span></div>
+    </div>
+    <div class="full hid" id="cAll" title="點一下公布"><span class="lab">台語羅馬字</span><span class="val tl">？</span><span class="say" aria-hidden="true">🔊</span><span class="note"></span></div>
+
+    <div class="actions">
+      <button class="btn pri" id="btnStep" title="Enter">公布聲母</button>
+      <button class="btn" id="btnAll" title="A">全部公布</button>
+      <button class="btn" id="btnRand" title="R">🎲 隨機</button>
+      <button class="btn" id="btnClear" title="Esc">清空</button>
+    </div>
+  </section>
+</main>
+<footer>簡報筆 ▶ 聲母→韻母→聲調→答案→台語音→下一題／◀ 倒退｜公布後點台語羅馬字聽台語｜空白 播放｜S 慢速｜Enter 依序公布｜A 全部公布｜R 隨機｜T 倒數｜Esc 清空　　© 2026 詹宗龍（臺中明道中學）｜臺羅依教育部拼音方案｜韓語語音：Microsoft Edge TTS</footer>
+
+<script src="data.js"></script>
+<script src="common.js"></script>
+<script>
+(function(){
+'use strict';
+var D = window.KO_DATA, KO = window.KO, TONES = KO.TONES;
+var AUDIO = {}; D.audio.forEach(function(a){ AUDIO[a] = 1; });
+var TW = {}; (D.tw||[]).forEach(function(a){ TW[a] = 1; });   // 已錄好的台語音檔
+var L = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', V = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+var T = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+var TIMER_SEC = 15;
+var $ = function(id){ return document.getElementById(id); };
+var sel = {c:-1, v:-1, t:0};
+var cur = null;
+
+/* ---------- 組合計算 ---------- */
+function compose(c,v,t){ return String.fromCharCode(0xAC00 + (L.indexOf(c)*21 + V.indexOf(v))*28 + T.indexOf(t||'')); }
+function analyse(){
+  if(sel.c<0 || sel.v<0) return null;
+  var c = D.cons[sel.c], v = D.vows[sel.v], t = D.codas[sel.t];
+  var ch = compose(c.j, v.j, t.j), code = ch.charCodeAt(0).toString(16);
+  var r = {ch:ch, c:c, v:v, t:t, code:code, info:null, why:''};
+  var info = KO.resolve(code);
+  /* 只有題庫內（近似度達門檻或教師審聽修正）的音才公布臺羅，其餘一律「無近似音」 */
+  if(info && info.inPool) r.info = info;
+  else if(info && info.excluded) r.why = '教師審聽後不列入';
+  else if(info) r.why = '近似度 ' + info.sim + '%' + (info.note ? '：' + info.note : '');
+  else if(v.tl===null) r.why = '臺語沒有 '+v.j+' 這個元音';
+  else if(t.tl===null) r.why = '臺語沒有收音 '+t.j;
+  else r.why = '臺語沒有「'+(t.j ? v.tlc : v.tl)+(t.tl||'')+'」這種組合';
+  return r;
+}
+
+/* ---------- 音訊 ---------- */
+var player = new Audio(), koVoice = null;
+function loadVoice(){
+  if(!('speechSynthesis' in window)) return;
+  koVoice = speechSynthesis.getVoices().filter(function(v){ return /^ko/i.test(v.lang); })[0] || null;
+}
+if('speechSynthesis' in window){ loadVoice(); speechSynthesis.onvoiceschanged = loadVoice; }
+function play(slow){
+  if(!cur){ msg('請先點選子音和母音'); return; }
+  var btn = $('btnPlay'); btn.classList.add('playing');
+  var done = function(){ btn.classList.remove('playing'); };
+  if(AUDIO[cur.code]){
+    player.pause();
+    player.src = 'audio/' + cur.code + '.mp3';
+    player.playbackRate = slow ? 0.65 : 1;
+    if('preservesPitch' in player) player.preservesPitch = true;
+    player.onended = done; player.onerror = done;
+    var p = player.play(); if(p && p.catch) p.catch(done);
+  } else if(koVoice){
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(cur.ch);
+    u.lang = 'ko-KR'; u.voice = koVoice; u.rate = slow ? 0.55 : 0.85;
+    u.onend = done; u.onerror = done;
+    speechSynthesis.speak(u);
+    msg('無近似音，以瀏覽器韓語語音播放');
+  } else {
+    done();
+    msg('無近似音，未預錄音檔');
+  }
+}
+function msg(s){ $('msg').textContent = s || ''; }
+/* 公布後點「台語羅馬字」：播放台語音（陽明交大台語 TTS） */
+function playTaigi(){
+  var x = cur && cur.info; if(!x) return;
+  var key = x.ini + x.fin + x.tone, all = $('cAll');
+  if(!TW[key]){ msg('「'+x.tl+'」還沒有台語音檔，請重跑 build.py'); return; }
+  player.pause();
+  player.src = 'audio_tw/' + key + '.mp3';
+  player.playbackRate = 1;
+  all.classList.add('saying');
+  var done = function(){ all.classList.remove('saying'); };
+  player.onended = done; player.onerror = done;
+  var p = player.play(); if(p && p.catch) p.catch(done);
+}
+
+/* ---------- 鍵盤區 ---------- */
+function buildGrid(id, list, key){
+  var box = $(id);
+  list.forEach(function(x, i){
+    var b = document.createElement('button');
+    b.className = 'jm' + (x.j==='' ? ' zero' : '');
+    var t = x.tl===null ? '—' : (x.tl==='' ? (key==='t' ? '' : '∅') : (key==='t' ? '-'+x.tl : x.tl));
+    b.innerHTML = '<span class="ko">'+(x.j || '無')+'</span><span class="t tl'+(x.tl===null?' none':'')+'">'+t+'</span>';
+    b.setAttribute('aria-label', x.j || '無收音');
+    b.addEventListener('click', function(){ sel[key] = i; update(true); });
+    box.appendChild(b);
+  });
+}
+function markSel(){
+  [['gC','c'],['gV','v'],['gT','t']].forEach(function(p){
+    Array.prototype.forEach.call($(p[0]).children, function(b,i){ b.classList.toggle('sel', i===sel[p[1]]); });
+  });
+}
+
+/* ---------- 舞臺 ---------- */
+function update(sound){
+  markSel();
+  cur = analyse();
+  stopTimer();
+  msg('');
+  var syl = $('syl');
+  if(!cur){
+    var parts = [];
+    if(sel.c<0) parts.push('子音'); if(sel.v<0) parts.push('母音');
+    syl.innerHTML = '<div class="empty">請老師點選'+parts.join('和')+'</div>';
+  } else {
+    var f = cur.c.j + ' ＋ ' + cur.v.j + (cur.t.j ? ' ＋ ' + cur.t.j : '');
+    syl.innerHTML = '<div class="big ko">'+cur.ch+'</div><div class="formula ko">'+f+'</div>';
+  }
+  setStep(0);
+  if(sound && cur) play(false);
+}
+function flip(el){ el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip'); }
+function setCard(el, show, val, sub, none){
+  var wasHidden = el.classList.contains('hid');
+  el.classList.toggle('hid', !show);
+  el.classList.toggle('none', !!(show && none));
+  el.querySelector('.val').textContent = show ? val : '？';
+  el.querySelector('.sub').textContent = show ? (sub||'') : '';
+  if(show && wasHidden) flip(el);
+}
+/* 公布狀態：依序公布（Enter／按鈕）或直接點卡片個別公布 */
+var ORDER = ['ini','fin','tone','all'], shown = {};
+function setStep(n){
+  shown = {}; ORDER.forEach(function(k,i){ shown[k] = n > i; });
+  said = false;
+  render();
+}
+function render(){
+  var r = cur, x = r && r.info;
+  var NONE = '無近似音';
+  // 聲母
+  var iniVal = NONE, iniSub = r ? r.why : '';
+  if(x){
+    iniVal = x.ini==='' ? '∅' : x.ini;
+    iniSub = x.ini==='' ? '零聲母（'+r.c.note+'）' : r.c.j+(r.c.note ? '：'+r.c.note : '');
+  }
+  setCard($('cIni'), shown.ini && r, iniVal, iniSub, !x);
+  // 韻母
+  setCard($('cFin'), shown.fin && r, x ? x.fin : NONE,
+    x ? (r.v.j + (r.t.j ? ' ＋ 收音 '+r.t.j : '')) : r && r.why, !x);
+  // 聲調
+  var toneVal = NONE, toneSub = '';
+  if(x){
+    var ti = TONES[x.tone];
+    toneVal = x.tone + ' ' + ti.icon;
+    toneSub = '第' + x.tone + '調．' + ti.name + '（' + ti.shape + '）';
+  }
+  setCard($('cTone'), shown.tone && r, toneVal, toneSub, !x);
+  // 臺羅
+  var all = $('cAll'), showAll = shown.all && r;
+  var wasHidden = all.classList.contains('hid');
+  all.classList.toggle('hid', !showAll);
+  all.classList.toggle('none', !!(showAll && !x));
+  all.querySelector('.val').textContent = showAll ? (x ? x.tl : NONE) : '？';
+  all.classList.toggle('playable', !!(showAll && x && TW[x.ini + x.fin + x.tone]));
+  var note = '';
+  if(showAll && x){
+    note = (x.ini==='' ? '' : x.ini + ' ＋ ') + x.fin + ' ＋ 第' + x.tone + '調';
+    if(x.fixed) note += '（教師審聽）';
+  } else if(showAll){ note = r.why; }
+  all.querySelector('.note').textContent = note;
+  if(showAll && wasHidden) flip(all);
+  var labels = {ini:'公布聲母', fin:'公布韻母', tone:'公布聲調', all:'公布台語羅馬字'};
+  var nxt = ORDER.filter(function(k){ return !shown[k]; })[0];
+  $('btnStep').textContent = nxt ? labels[nxt] : '已全部公布';
+  $('btnStep').disabled = !r || !nxt;
+  $('btnAll').disabled = !r || !nxt;
+}
+function nextStep(){
+  var nxt = ORDER.filter(function(k){ return !shown[k]; })[0];
+  if(cur && nxt){ stopTimer(); shown[nxt] = true; render(); }
+}
+function revealOne(k){ if(cur && !shown[k]){ stopTimer(); shown[k] = true; render(); } }
+function revealAll(){ if(cur){ stopTimer(); setStep(4); } }
+function clearAll(){ sel = {c:-1, v:-1, t:0}; update(false); }
+/* 隨機只從題庫（近似度 ≥ 門檻或教師審聽過、且未被排除）抽 */
+var history = [];   // 隨機出題前的題目，供簡報筆「上一頁」退回
+/* 洗牌發題：題庫每題各出一次，全部輪過才重新洗牌（新一輪第一題不會跟上一題相同） */
+var bag = [], round = 0, roundSize = 0;
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function randomPick(){
+  var pool = Object.keys(D.items).filter(function(code){
+    var r = KO.resolve(code); return r && r.inPool && AUDIO[code];
+  });
+  if(!pool.length){ msg('題庫是空的'); return; }
+  bag = bag.filter(function(c){ return pool.indexOf(c) >= 0; });   // 審聽後被排除的題目移出
+  var now = cur && cur.code;
+  if(!bag.length){
+    bag = shuffle(pool.slice()); round++; roundSize = bag.length;
+    if(bag.length > 1 && bag[bag.length-1] === now){ var t = bag[0]; bag[0] = bag[bag.length-1]; bag[bag.length-1] = t; }
+  }
+  if(cur) history.push({c:sel.c, v:sel.v, t:sel.t});
+  var code = bag.pop();
+  var n = parseInt(code, 16) - 0xAC00;
+  var cj = L[Math.floor(n/588)], vj = V[Math.floor(n%588/28)], tj = T[n%28];
+  sel.c = D.cons.map(function(x){ return x.j; }).indexOf(cj);
+  sel.v = D.vows.map(function(x){ return x.j; }).indexOf(vj);
+  sel.t = D.codas.map(function(x){ return x.j; }).indexOf(tj);
+  update(true);
+  msg('第 ' + round + ' 輪：' + (roundSize - bag.length) + '／' + roundSize);
+}
+/* 簡報筆步驟：聲母 → 韻母 → 聲調 → 答案 → 播台語音 → 隨機；上一頁倒著走 */
+var said = false;   // 這一題是否已用簡報筆播過台語音
+function forward(){
+  var nxt = ORDER.filter(function(k){ return !shown[k]; })[0];
+  if(cur && nxt){ stopTimer(); shown[nxt] = true; render(); }
+  else if(cur && !said){ said = true; playTaigi(); }
+  else { said = false; randomPick(); }
+}
+function backward(){
+  var last = ORDER.filter(function(k){ return shown[k]; }).pop();
+  if(cur && said){ said = false; player.pause(); $('cAll').classList.remove('saying'); }
+  else if(cur && last){ stopTimer(); shown[last] = false; render(); }
+  else if(history.length){ sel = history.pop(); update(false); setStep(ORDER.length); said = true; }
+}
+
+/* ---------- 倒數 ---------- */
+var timerId = null, left = 0;
+function stopTimer(){
+  if(timerId){ clearInterval(timerId); timerId = null; }
+  $('tLabel').textContent = TIMER_SEC + ' 秒'; $('btnTimer').className = 'small';
+}
+function startTimer(){
+  if(timerId){ stopTimer(); return; }
+  left = TIMER_SEC; $('tLabel').textContent = left; $('btnTimer').className = 'small on';
+  timerId = setInterval(function(){
+    left--;
+    if(left<=0){ clearInterval(timerId); timerId = null; $('tLabel').textContent = '時間到'; $('btnTimer').className = 'small end'; return; }
+    $('tLabel').textContent = left;
+  }, 1000);
+}
+
+/* ---------- 開關 ---------- */
+function toggle(btn, cls){
+  var on = btn.getAttribute('aria-pressed')!=='true';
+  btn.setAttribute('aria-pressed', on);
+  document.body.classList.toggle(cls, on);
+}
+$('tgMap').addEventListener('click', function(){ toggle(this, 'showmap'); });
+$('tgHide').addEventListener('click', function(){ toggle(this, 'hidekorean'); });
+$('tgFull').addEventListener('click', function(){
+  if(!document.fullscreenElement){ var p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if(p && p.catch) p.catch(function(){}); }
+  else document.exitFullscreen();
+});
+document.addEventListener('fullscreenchange', function(){ $('tgFull').setAttribute('aria-pressed', !!document.fullscreenElement); });
+
+$('btnPlay').addEventListener('click', function(){ play(false); });
+$('btnSlow').addEventListener('click', function(){ play(true); });
+$('btnTimer').addEventListener('click', startTimer);
+$('btnStep').addEventListener('click', nextStep);
+$('btnAll').addEventListener('click', revealAll);
+$('btnRand').addEventListener('click', randomPick);
+$('btnClear').addEventListener('click', clearAll);
+[['cIni','ini'],['cFin','fin'],['cTone','tone']].forEach(function(p){
+  $(p[0]).addEventListener('click', function(){ revealOne(p[1]); });
+});
+$('cAll').addEventListener('click', function(){
+  if(shown.all) playTaigi(); else revealOne('all');
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key;
+  if(k===' '){ e.preventDefault(); play(false); }
+  else if(k==='Enter'){ e.preventDefault(); nextStep(); }
+  else if(k==='s' || k==='S'){ play(true); }
+  else if(k==='a' || k==='A'){ revealAll(); }
+  else if(k==='r' || k==='R'){ randomPick(); }
+  else if(k==='t' || k==='T'){ startTimer(); }
+  else if(k==='Escape'){ clearAll(); }
+  else if(k==='PageDown' || k==='ArrowRight' || k==='ArrowDown'){ e.preventDefault(); forward(); }
+  else if(k==='PageUp' || k==='ArrowLeft' || k==='ArrowUp'){ e.preventDefault(); backward(); }
+});
+
+buildGrid('gC', D.cons, 'c');
+buildGrid('gV', D.vows, 'v');
+buildGrid('gT', D.codas, 't');
+update(false);
+})();
+</script>
+</body>
+</html>
