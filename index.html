@@ -60,7 +60,7 @@ body.showmap .jm .t{display:block}
 .jm.sel{background:var(--yellow);box-shadow:inset 0 -4px 0 var(--black)}
 body.hidekorean .jm.sel{background:var(--white);box-shadow:none}
 @media (hover:hover){ .jm:hover{background:#FFF4B0} }
-/* 牌卡右上角的單音播放鈕（子音配 ㅏ、母音配 ㅇ、收音配 아） */
+/* 牌卡右上角的單音播放鈕 */
 .jm .sp{--s:max(18px,min(30cqh,34cqw));position:absolute;top:2px;right:2px;width:var(--s);height:var(--s);border-radius:50%;
   background:var(--black);color:var(--yellow);display:grid;place-items:center;font-size:calc(var(--s)*.58);line-height:1}
 .jm .sp.on{background:var(--yellow);color:var(--black);box-shadow:0 0 0 2px var(--black)}
@@ -249,15 +249,26 @@ function play(slow){
   }
 }
 function msg(s){ $('msg').textContent = s || ''; }
-/* 牌卡單音：子音 → 子音＋ㅏ、母音 → ㅇ＋母音、收音 → 아＋收音 */
+/* 牌卡單音（jamo_cut.py 從音節錄音剪出，audio_jamo\）：
+   子音剪掉後面的 ㅏ，ㅁ ㄴ ㄹ 取收音段；母音用 ㅇ＋母音（ㅇ 不發音）；
+   ㅇ 初聲不發音、收音 ㄱ ㅂ ㅅ 不送氣聽不到，這幾張不放鈕 */
+var JAMO_C = 'ㄱㅋㄲㄷㅌㄸㅂㅍㅃㅈㅊㅉㅅㅆㅎㅁㄴㄹ', JAMO_T = 'ㅁㄴㅇㄹ';
+function hex(s){ return s.charCodeAt(0).toString(16); }
+function jamoSrc(key, j){
+  if(!j) return null;
+  if(key==='v') return 'audio/' + hex(compose('ㅇ', j)) + '.mp3';
+  if(key==='c' && JAMO_C.indexOf(j) >= 0) return 'audio_jamo/c-' + hex(j) + '.mp3';
+  if(key==='t' && JAMO_T.indexOf(j) >= 0) return 'audio_jamo/t-' + hex(j) + '.mp3';
+  return null;
+}
 var spOn = null;
-function playJamo(ch, el){
+function playJamo(src, el){
   if(spOn) spOn.classList.remove('on');
   spOn = el; el.classList.add('on');
   var done = function(){ el.classList.remove('on'); if(spOn===el) spOn = null; };
   if('speechSynthesis' in window) speechSynthesis.cancel();
   player.pause();
-  player.src = 'audio/' + ch.charCodeAt(0).toString(16) + '.mp3?v=' + D.builtAt;
+  player.src = src + '?v=' + D.builtAt;
   player.volume = 1; player.playbackRate = 1;
   player.onended = done; player.onerror = done;
   var p = player.play(); if(p && p.catch) p.catch(done);
@@ -289,15 +300,17 @@ function buildGrid(id, list, key){
     b.innerHTML = '<span class="ko">'+(x.j || '無')+'</span><span class="t tl'+(x.tl===null?' none':'')+'">'+t+'</span>';
     b.setAttribute('aria-label', x.j || '無收音');
     b.addEventListener('click', function(){ sel[key] = i; update(true); });
-    /* 右上角播放鈕：只播這張牌卡的音，不改變選取 */
-    if(x.j){
-      var ch = key==='c' ? compose(x.j,'ㅏ') : key==='v' ? compose('ㅇ',x.j) : compose('ㅇ','ㅏ',x.j);
+    /* 右上角播放鈕：只播這張牌卡的單音，不改變選取 */
+    var src = jamoSrc(key, x.j);
+    if(src){
       var sp = document.createElement('span');
       sp.className = 'sp'; sp.textContent = '🔊';
       sp.setAttribute('role', 'button');
-      sp.setAttribute('aria-label', '播放 ' + x.j + '（' + ch + '）');
-      sp.title = '播放 ' + ch;
-      sp.addEventListener('click', function(e){ e.stopPropagation(); playJamo(ch, sp); });
+      sp.setAttribute('aria-label', '播放 ' + x.j + ' 的音');
+      sp.title = '播放 ' + x.j + ' 的音';
+      (function(src, sp){
+        sp.addEventListener('click', function(e){ e.stopPropagation(); playJamo(src, sp); });
+      })(src, sp);
       b.appendChild(sp);
     }
     box.appendChild(b);
