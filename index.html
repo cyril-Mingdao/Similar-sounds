@@ -65,6 +65,20 @@ body.hidekorean .jm.sel{background:var(--white);box-shadow:none}
   background:var(--black);color:var(--yellow);display:grid;place-items:center;font-size:calc(var(--s)*.58);line-height:1}
 .jm .sp.on{background:var(--yellow);color:var(--black);box-shadow:0 0 0 2px var(--black)}
 @media (hover:hover){ .jm .sp:hover{background:var(--yellow);color:var(--black)} }
+/* 標題旁的輪播組：速度鈕＋輪播鈕，依序播放該列所有有 🔊 的牌卡 */
+.composer h2 .auto{display:inline-flex;align-items:center;gap:6px;margin-left:4px}
+.composer h2 .auto button{height:1.35em;border:2px solid var(--black);border-radius:999px;font-weight:700;line-height:1;padding:0;
+  display:inline-grid;place-items:center}
+.composer h2 .spd{min-width:3.2em;padding:0 .5em;background:var(--white);color:var(--black);font-size:.8em;height:1.7em}
+.composer h2 .ap{width:1.35em;background:var(--black);color:var(--yellow);font-size:1em}
+.composer h2 .ap::before{content:'▶';font-size:.62em;margin-left:.12em}
+.composer h2 .ap.on{background:var(--yellow);color:var(--black);animation:pulse .5s ease-in-out infinite alternate}
+.composer h2 .ap.on::before{content:'■';margin-left:0;font-size:.7em}
+@media (hover:hover){ .composer h2 .auto button:hover{filter:brightness(.92)} }
+/* 輪播中的牌卡：黑底黃字（與黃底的「已選取」區分） */
+.jm.auto-on{background:var(--black);box-shadow:0 0 0 3px var(--yellow) inset}
+.jm.auto-on .ko{color:var(--yellow)}
+.jm.auto-on .t{color:var(--white)}
 
 /* ---- 右：舞臺 ---- */
 .stage{min-height:0;display:grid;grid-template-rows:minmax(0,1.25fr) minmax(0,1fr) minmax(0,.5fr) auto;gap:var(--gap)}
@@ -146,11 +160,11 @@ footer{flex:none;font-size:clamp(.6rem,1.4vmin,.75rem);color:#777;text-align:cen
 
 <main>
   <section class="composer" aria-label="韓文組合">
-    <h2><span class="n">1</span>子音（初聲）</h2>
+    <h2><span class="n">1</span>子音（初聲）<span class="auto"><button class="spd" data-auto="c" title="輪播速度（點一下切換）" aria-label="子音輪播速度">1.75x</button><button class="ap" data-auto="c" title="輪播子音" aria-label="輪播子音"></button></span></h2>
     <div class="grid" id="gC"></div>
-    <h2><span class="n">2</span>母音（中聲）</h2>
+    <h2><span class="n">2</span>母音（中聲）<span class="auto"><button class="spd" data-auto="v" title="輪播速度（點一下切換）" aria-label="母音輪播速度">1.75x</button><button class="ap" data-auto="v" title="輪播母音" aria-label="輪播母音"></button></span></h2>
     <div class="grid" id="gV"></div>
-    <h2><span class="n">3</span>收音（받침）</h2>
+    <h2><span class="n">3</span>收音（받침）<span class="auto"><button class="spd" data-auto="t" title="輪播速度（點一下切換）" aria-label="收音輪播速度">1.75x</button><button class="ap" data-auto="t" title="輪播收音" aria-label="輪播收音"></button></span></h2>
     <div class="grid" id="gT"></div>
   </section>
 
@@ -225,6 +239,7 @@ function loadVoice(){
 }
 if('speechSynthesis' in window){ loadVoice(); speechSynthesis.onvoiceschanged = loadVoice; }
 function play(slow){
+  stopAuto();
   if(!cur){ msg('請先點選子音和母音'); return; }
   var btn = $('btnPlay'); btn.classList.add('playing');
   var done = function(){ btn.classList.remove('playing'); };
@@ -264,6 +279,7 @@ function jamoSrc(key, j){
 }
 var spOn = null;
 function playJamo(src, el){
+  stopAuto();
   if(spOn) spOn.classList.remove('on');
   spOn = el; el.classList.add('on');
   var done = function(){ el.classList.remove('on'); if(spOn===el) spOn = null; };
@@ -276,6 +292,7 @@ function playJamo(src, el){
 }
 /* 公布後點「台語羅馬字」：播放台語音（陽明交大台語 TTS） */
 function playTaigi(){
+  stopAuto();
   var x = cur && cur.info; if(!x) return;
   var key = x.ini + x.fin + x.tone, all = $('cAll');
   if(!TW[key]){ msg('「'+x.tl+'」還沒有台語音檔，請重跑 build.py'); return; }
@@ -289,6 +306,70 @@ function playTaigi(){
   var done = function(){ all.classList.remove('saying'); };
   player.onended = done; player.onerror = done;
   var p = player.play(); if(p && p.catch) p.catch(done);
+}
+
+/* ---------- 輪播：依序播放一整列牌卡的單音 ---------- */
+var AUTO_SPEEDS = [0.5, 0.75, 1, 1.5, 1.75];
+var autoSpeed = 1.75;   // 預設 1.75 倍
+try { var sv = parseFloat(localStorage.getItem('ko-auto-speed')); if(AUTO_SPEEDS.indexOf(sv) >= 0) autoSpeed = sv; } catch(e){}
+var autoRun = null;
+var AUTO_GRID = {c:'gC', v:'gV', t:'gT'};
+function showSpeed(){
+  Array.prototype.forEach.call(document.querySelectorAll('.composer .spd'), function(b){ b.textContent = autoSpeed + 'x'; });
+}
+/* 三列共用同一個速度；輪播中切換立即套用 */
+function cycleSpeed(){
+  autoSpeed = AUTO_SPEEDS[(AUTO_SPEEDS.indexOf(autoSpeed) + 1) % AUTO_SPEEDS.length];
+  try { localStorage.setItem('ko-auto-speed', String(autoSpeed)); } catch(e){}
+  showSpeed();
+  if(autoRun){ player.defaultPlaybackRate = autoSpeed; player.playbackRate = autoSpeed; }
+}
+function stopAuto(){
+  if(!autoRun) return;
+  var run = autoRun; autoRun = null;
+  run.cancelled = true;
+  player.pause();
+  player.defaultPlaybackRate = 1; player.playbackRate = 1;
+  if(run.finish) run.finish();
+  Array.prototype.forEach.call(document.querySelectorAll('.jm.auto-on'), function(b){ b.classList.remove('auto-on'); if(b._sp) b._sp.classList.remove('on'); });
+  Array.prototype.forEach.call(document.querySelectorAll('.composer .ap.on'), function(b){ b.classList.remove('on'); });
+}
+function toggleAuto(key){
+  var same = autoRun && autoRun.key === key;
+  stopAuto();
+  if(!same) runAuto(key);
+}
+function runAuto(key){
+  var tiles = Array.prototype.filter.call($(AUTO_GRID[key]).children, function(b){ return b._src; });
+  var run = {key:key, cancelled:false, finish:null};
+  autoRun = run;
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  if(spOn){ spOn.classList.remove('on'); spOn = null; }
+  document.querySelector('.composer .ap[data-auto="' + key + '"]').classList.add('on');
+  var i = 0;
+  (function next(){
+    if(run.cancelled) return;
+    if(i >= tiles.length){ if(autoRun === run) stopAuto(); return; }
+    var b = tiles[i++];
+    b.classList.add('auto-on'); b._sp.classList.add('on');
+    var ended = false, guard;
+    var finish = function(){
+      if(ended) return; ended = true;
+      clearTimeout(guard);
+      player.onended = player.onerror = null;
+      b.classList.remove('auto-on'); b._sp.classList.remove('on');
+      if(!run.cancelled) setTimeout(next, 250);
+    };
+    run.finish = finish;
+    guard = setTimeout(finish, 15000 / autoSpeed);
+    player.pause();
+    player.defaultPlaybackRate = autoSpeed;
+    player.src = b._src + '?v=' + D.builtAt + '-' + JAMO_V;
+    player.volume = 1; player.playbackRate = autoSpeed;
+    if('preservesPitch' in player) player.preservesPitch = true;
+    player.onended = finish; player.onerror = finish;
+    var p = player.play(); if(p && p.catch) p.catch(finish);
+  })();
 }
 
 /* ---------- 鍵盤區 ---------- */
@@ -309,6 +390,7 @@ function buildGrid(id, list, key){
       sp.setAttribute('role', 'button');
       sp.setAttribute('aria-label', '播放 ' + x.j + ' 的音');
       sp.title = '播放 ' + x.j + ' 的音';
+      b._src = src; b._sp = sp;
       (function(src, sp){
         sp.addEventListener('click', function(e){ e.stopPropagation(); playJamo(src, sp); });
       })(src, sp);
@@ -514,6 +596,9 @@ document.addEventListener('keydown', function(e){
 buildGrid('gC', D.cons, 'c');
 buildGrid('gV', D.vows, 'v');
 buildGrid('gT', D.codas, 't');
+Array.prototype.forEach.call(document.querySelectorAll('.composer .spd'), function(b){ b.addEventListener('click', cycleSpeed); });
+Array.prototype.forEach.call(document.querySelectorAll('.composer .ap'), function(b){ b.addEventListener('click', function(){ toggleAuto(b.dataset.auto); }); });
+showSpeed();
 update(false);
 })();
 </script>
