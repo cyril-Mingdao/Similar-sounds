@@ -253,6 +253,7 @@ function msg(s){ $('msg').textContent = s || ''; }
    子音剪掉後面的 ㅏ，ㅁ ㄴ ㄹ 取收音段；母音用 ㅇ＋母音（ㅇ 不發音）；
    ㅇ 初聲不發音、收音 ㄱ ㅂ ㅅ 不送氣聽不到，這幾張不放鈕 */
 var JAMO_C = 'ㄱㅋㄲㄷㅌㄸㅂㅍㅃㅈㅊㅉㅅㅆㅎㅁㄴㄹ', JAMO_T = 'ㅁㄴㅇㄹ';
+var JAMO_V = 2;   // 重跑 jamo_cut.py 後加 1，避免瀏覽器播到快取的舊音檔
 function hex(s){ return s.charCodeAt(0).toString(16); }
 function jamoSrc(key, j){
   if(!j) return null;
@@ -268,7 +269,7 @@ function playJamo(src, el){
   var done = function(){ el.classList.remove('on'); if(spOn===el) spOn = null; };
   if('speechSynthesis' in window) speechSynthesis.cancel();
   player.pause();
-  player.src = src + '?v=' + D.builtAt;
+  player.src = src + '?v=' + D.builtAt + '-' + JAMO_V;
   player.volume = 1; player.playbackRate = 1;
   player.onended = done; player.onerror = done;
   var p = player.play(); if(p && p.catch) p.catch(done);
