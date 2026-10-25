@@ -146,6 +146,11 @@ footer{flex:none;font-size:clamp(.6rem,1.4vmin,.75rem);color:#777;text-align:cen
   header h1{font-size:clamp(.9rem,4vw,1.2rem)}
   .tools{margin-left:0}
 }
+/* 手機：牌卡太小，播放鈕縮小並讓出右側空間，避免蓋住字母 */
+@media (max-width:600px){
+  .jm .sp{--s:15px;top:1px;right:1px;font-size:9px}
+  .jm.has-sp{padding-right:14px}
+}
 </style>
 </head>
 <body>
@@ -390,7 +395,7 @@ function buildGrid(id, list, key){
       sp.setAttribute('role', 'button');
       sp.setAttribute('aria-label', '播放 ' + x.j + ' 的音');
       sp.title = '播放 ' + x.j + ' 的音';
-      b._src = src; b._sp = sp;
+      b._src = src; b._sp = sp; b.classList.add('has-sp');
       (function(src, sp){
         sp.addEventListener('click', function(e){ e.stopPropagation(); playJamo(src, sp); });
       })(src, sp);
