@@ -86,7 +86,9 @@ body.hidekorean .jm.sel{background:var(--white);box-shadow:none}
 .show{container-type:size;min-height:0;background:var(--gray-d);border-radius:16px;position:relative;
   display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0 clamp(10px,2.4vw,40px) 0 clamp(6px,1.2vw,20px)}
 .syl{text-align:center;min-width:0}
-.syl .big{font-size:min(56cqh,34cqw);line-height:1}
+.syl .big{display:inline-block;font-size:min(56cqh,34cqw);line-height:1}
+.syl a.big{color:inherit;text-decoration:none;cursor:pointer}
+@media (hover:hover){ .syl a.big:hover{color:var(--yellow)} }
 .syl .formula{font-size:min(11cqh,6cqw);color:var(--yellow);margin-top:3cqh;letter-spacing:.05em;white-space:nowrap}
 .syl .empty{font-size:min(9cqh,5cqw);color:var(--mute)}
 body.hidekorean .syl .big,body.hidekorean .syl .formula{visibility:hidden}
@@ -451,7 +453,9 @@ function update(sound){
     syl.innerHTML = '<div class="empty">請老師點選'+parts.join('和')+'</div>';
   } else {
     var f = cur.c.j + ' ＋ ' + cur.v.j + (cur.t.j ? ' ＋ ' + cur.t.j : '');
-    syl.innerHTML = '<div class="big ko">'+cur.ch+'</div><div class="formula ko">'+f+'</div>';
+    /* 組合字可點：另開 Naver 韓中辭典查這個字 */
+    var dict = 'https://korean.dict.naver.com/kozhdict/#/search?query=' + encodeURIComponent(cur.ch);
+    syl.innerHTML = '<a class="big ko" href="'+dict+'" target="_blank" rel="noopener" title="到 Naver 辭典查「'+cur.ch+'」">'+cur.ch+'</a><div class="formula ko">'+f+'</div>';
   }
   setStep(0);
   if(sound && cur) play(false);
