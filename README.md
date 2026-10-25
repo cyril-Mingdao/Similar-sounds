@@ -27,7 +27,7 @@
 - 韓語音檔：Microsoft Edge 語音合成（ko-KR-SunHiNeural）
 - 台語音檔（`audio_tw/`）：
   - 16 個取自教育部《[臺灣台語常用詞辭典](https://sutian.moe.edu.tw/)》同音讀單字詞條的音檔：暗 àm、按 àn、甕 àng、伊 i、飲 ím、引 ín、約 iok、一 it、塭 ùn、熨 ut、覕 bih、嗄 sà、產 sán、送 sàng、四 sì、審 sím。著作權屬教育部，依[創用CC 姓名標示－禁止改作 3.0 臺灣](https://creativecommons.org/licenses/by-nd/3.0/tw/)授權條款以原檔使用，未經剪輯或改作。
-  - 其餘 8 個（â、uh、ùng、bā、lah、nih、sám、sín）辭典無同音讀單字詞條，由陽明交大台語 TTS（男聲、台北腔；v19 起由女聲改男聲）產生。
+  - 其餘 8 個（â、uh、ùng、bā、lah、nih、sám、sín）辭典無同音讀單字詞條，由陽明交大台語 TTS 產生。
 - 台語羅馬字依教育部《臺灣台語羅馬字拼音方案》；聲調依音檔實際音高（Praat 基頻分析）判定並經教師審聽
 
 ---
